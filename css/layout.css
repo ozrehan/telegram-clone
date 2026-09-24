@@ -1,0 +1,31 @@
+/* ================= layout.css — app shell ================= */
+#app{display:flex;height:100vh;width:100vw;position:relative}
+
+/* ---------- LEFT PANEL ---------- */
+#sidebar{width:420px;min-width:420px;max-width:420px;background:#fff;display:flex;
+  flex-direction:column;border-right:1px solid var(--border);z-index:5}
+
+/* ---------- RIGHT PANE ---------- */
+#chatpane{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+
+/* welcome placeholder (no chat selected) */
+#welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--bg);gap:14px;color:var(--grey)}
+#welcome .ball{width:120px;height:120px;border-radius:50%;
+  background:linear-gradient(135deg,#5ac8fa,#2f80ed);
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-pop)}
+#welcome .ball .ic{width:64px;height:64px;color:#fff}
+#welcome p{font-size:15px}
+
+/* generic overlay root for panels / modals / context menus */
+#overlay{position:fixed;inset:0;pointer-events:none;z-index:100}
+#overlay>*{pointer-events:auto}
+
+@media(max-width:900px){
+  #sidebar{width:340px;min-width:340px;max-width:340px}
+}
+@media(max-width:760px){
+  #sidebar{width:100%;min-width:0;max-width:none}
+  #chatpane{display:none}
+  #chatpane.open{display:flex;position:fixed;inset:0;z-index:20;background:var(--bg)}
+}
