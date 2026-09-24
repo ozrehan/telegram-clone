@@ -1,18 +1,22 @@
-/* ================= store.js — central state ================= */
+/* ================= store.js — central state (server-backed) =================
+   Chats and messages live in Netlify Blobs via App.api.
+   The store caches them locally and keeps the same public API
+   the components were written against.
+*/
 'use strict';
 window.App = window.App || {};
 
 /**
  * App.store — single source of truth.
- * Holds chats, messages, the active chat, reply draft and user settings.
- * After every mutation it asks the UI to re-render the affected part.
+ * state.chats: server chat views {id,name,type,grad,status,about,members,
+ *   unread,pinned,muted,lastMessage}
+ * state.messages[chatId]: cached server messages {mid,from,kind,text,src,
+ *   data,fileName,fileSize,duration,replyTo,forwardedFrom,ts,sender,color,time}
  */
 App.store = (() => {
-  let _mid = 1;
-
   const state = {
-    chats: App.data.chats,
-    messages: App.data.messages,
+    chats: [],
+    messages: {},
     activeId: null,
     replyTo: null,          // {mid, sender, text} quoted in the composer
     filter: '',
@@ -24,10 +28,6 @@ App.store = (() => {
       accent: '#5682a3'
     }
   };
-
-  /* assign stable ids to seeded messages */
-  for (const id of Object.keys(state.messages))
-    for (const m of state.messages[id]) m.mid = 'm' + (_mid++);
 
   /* ---------- persistence (best-effort; file:// safe) ---------- */
   function saveSettings() {
@@ -42,54 +42,98 @@ App.store = (() => {
 
   /* ---------- reads ---------- */
   const getChat = id => state.chats.find(c => c.id === id);
-  const getMessages = id => state.messages[id] || (state.messages[id] = []);
+  const getMessages = id => state.messages[id] || [];
   const findMessage = (chatId, mid) => getMessages(chatId).find(m => m.mid === mid);
-  const lastMessage = chat => {
-    const arr = getMessages(chat.id);
-    return arr[arr.length - 1] || null;
-  };
+  const lastMessage = chat => chat.lastMessage || null;
 
   /* pinned chats first, then by recency of last message (stable otherwise) */
   function sortedChats() {
-    const pinned = state.chats.filter(c => c.pinned);
-    const rest = state.chats.filter(c => !c.pinned);
+    const byRecency = (a, b) =>
+      ((b.lastMessage && b.lastMessage.ts) || 0) - ((a.lastMessage && a.lastMessage.ts) || 0);
+    const pinned = state.chats.filter(c => c.pinned).sort(byRecency);
+    const rest = state.chats.filter(c => !c.pinned).sort(byRecency);
     return pinned.concat(rest);
   }
 
-  /* ---------- mutations ---------- */
-  function addMessage(chatId, msg) {
-    msg.mid = 'm' + (_mid++);
-    msg.time = msg.time || App.utils.nowTime();
-    msg.kind = msg.kind || 'text';
-    getMessages(chatId).push(msg);
-    return msg;
+  /* ---------- server sync ---------- */
+  async function loadChats() {
+    const d = await App.api.chats();
+    state.chats = d.chats;
+    return state.chats;
   }
+
+  async function loadMessages(chatId) {
+    const d = await App.api.messages(chatId, 0);
+    state.messages[chatId] = d.messages;
+    return d.messages;
+  }
+
+  /** merge freshly polled messages into the cache; returns the new ones */
+  function mergeMessages(chatId, msgs) {
+    const cache = state.messages[chatId] || (state.messages[chatId] = []);
+    const have = new Set(cache.map(m => m.mid));
+    const fresh = msgs.filter(m => !have.has(m.mid));
+    if (fresh.length) {
+      cache.push(...fresh);
+      cache.sort((a, b) => a.ts - b.ts);
+    }
+    return fresh;
+  }
+
+  function touchLastMessage(chatId, m) {
+    const chat = getChat(chatId);
+    if (chat) chat.lastMessage = {
+      mid: m.mid, from: m.from, kind: m.kind, text: m.text || '',
+      sender: m.sender, fileName: m.fileName, ts: m.ts, time: m.time
+    };
+  }
+
+  async function sendMessage(chatId, payload) {
+    const d = await App.api.send(chatId, payload);
+    const cache = state.messages[chatId] || (state.messages[chatId] = []);
+    if (!cache.some(m => m.mid === d.message.mid)) {
+      cache.push(d.message);
+      cache.sort((a, b) => a.ts - b.ts);
+    }
+    touchLastMessage(chatId, d.message);
+    return d.message;
+  }
+
+  async function deleteMessage(chatId, mid) {
+    await App.api.deleteMessage(mid);
+    const arr = state.messages[chatId] || [];
+    const i = arr.findIndex(m => m.mid === mid);
+    if (i >= 0) arr.splice(i, 1);
+  }
+
+  /* ---------- local mutations ---------- */
   function setActive(id) {
     state.activeId = id;
     state.replyTo = null;
   }
-  function clearUnread(id) {
+  function setReplyTo(q) { state.replyTo = q; }
+
+  async function clearUnread(id) {
     const c = getChat(id);
     if (c) c.unread = 0;
+    try { await App.api.markRead(id); } catch (e) {}
   }
-  function bumpUnread(id) {
+  async function togglePin(id) {
     const c = getChat(id);
-    if (c && id !== state.activeId) c.unread = (c.unread || 0) + 1;
+    if (!c) return;
+    try {
+      const d = await App.api.pin(id);
+      c.pinned = d.pinned;
+    } catch (e) { App.utils.toast(e.message); }
   }
-  function togglePin(id) {
+  async function toggleMute(id) {
     const c = getChat(id);
-    if (c) c.pinned = !c.pinned;
+    if (!c) return;
+    try {
+      const d = await App.api.mute(id);
+      c.muted = d.muted;
+    } catch (e) { App.utils.toast(e.message); }
   }
-  function toggleMute(id) {
-    const c = getChat(id);
-    if (c) c.muted = !c.muted;
-  }
-  function deleteMessage(chatId, mid) {
-    const arr = getMessages(chatId);
-    const i = arr.findIndex(m => m.mid === mid);
-    if (i >= 0) arr.splice(i, 1);
-  }
-  function setReplyTo(q) { state.replyTo = q; }
   function updateSettings(patch) {
     Object.assign(state.settings, patch);
     saveSettings();
@@ -102,8 +146,8 @@ App.store = (() => {
 
   return {
     state, getChat, getMessages, findMessage, lastMessage, sortedChats,
-    addMessage, setActive, clearUnread, bumpUnread,
-    togglePin, toggleMute, deleteMessage, setReplyTo,
+    loadChats, loadMessages, mergeMessages, sendMessage, deleteMessage,
+    setActive, clearUnread, togglePin, toggleMute, setReplyTo,
     updateSettings, saveSettings
   };
 })();
