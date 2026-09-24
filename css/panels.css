@@ -1,0 +1,69 @@
+/* ================= panels.css — info panel, settings, modals ================= */
+
+/* ---------- right slide-over info panel ---------- */
+#infopanel{position:absolute;top:0;right:0;bottom:0;width:380px;max-width:90vw;background:#fff;
+  box-shadow:-8px 0 24px rgba(0,0,0,.15);transform:translateX(105%);transition:transform .25s ease;
+  display:flex;flex-direction:column;z-index:60}
+#infopanel.open{transform:translateX(0)}
+#infopanel .phead{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
+#infopanel .phead h3{font-size:16px;flex:1}
+#infopanel .pbody{flex:1;overflow-y:auto}
+#infopanel .phero{padding:24px 16px;text-align:center;border-bottom:1px solid var(--border)}
+#infopanel .phero .avatar{margin:0 auto 10px}
+#infopanel .phero h2{font-size:18px;margin-bottom:4px}
+#infopanel .phero .sub{font-size:13px;color:var(--grey)}
+#infopanel .prow{display:flex;align-items:center;gap:14px;padding:12px 18px;cursor:pointer;font-size:14.5px}
+#infopanel .prow:hover{background:var(--hover)}
+#infopanel .prow .ic{color:var(--grey)}
+#infopanel .prow.danger{color:var(--danger)}
+#infopanel .prow.danger .ic{color:var(--danger)}
+#infopanel .psec{padding:14px 18px 6px;font-size:13px;color:var(--grey);font-weight:600}
+#infopanel .members{padding:0 0 8px}
+#infopanel .member{display:flex;align-items:center;gap:12px;padding:8px 18px}
+#infopanel .member .mname{flex:1;font-size:14.5px;font-weight:600}
+#infopanel .member .mrole{font-size:12px;color:var(--grey-light)}
+#mediagrid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 3px 12px}
+#mediagrid img{width:100%;aspect-ratio:1;object-fit:cover;cursor:pointer;display:block}
+
+/* ---------- settings view (replaces chat pane) ---------- */
+#settingsview{flex:1;display:none;flex-direction:column;background:var(--bg);min-width:0}
+#settingsview.open{display:flex}
+#settingsview .shead{background:#fff;display:flex;align-items:center;gap:12px;
+  padding:8px 16px;border-bottom:1px solid var(--border)}
+#settingsview .shead h2{font-size:17px;flex:1}
+#settingsview .sbody{flex:1;overflow-y:auto;max-width:640px;width:100%;margin:0 auto;padding:20px 16px}
+.scard{background:#fff;border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+.scard .srow{display:flex;align-items:center;gap:14px;padding:14px 18px;font-size:15px}
+.scard .srow+.srow{border-top:1px solid var(--border)}
+.scard .srow .lab{flex:1}
+.scard .srow .desc{font-size:12.5px;color:var(--grey);margin-top:2px}
+.scard .srow .ic{color:var(--grey)}
+/* toggle switch */
+.toggle{width:46px;height:28px;border-radius:14px;background:#c9d2d8;border:none;cursor:pointer;
+  position:relative;transition:background .15s;flex-shrink:0}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+  background:#fff;box-shadow:var(--shadow);transition:left .15s}
+.toggle.on{background:var(--accent)}
+.toggle.on::after{left:21px}
+.swatchrow{display:flex;gap:10px;padding:4px 0}
+.swatch{width:38px;height:38px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.swatch.on{border-color:#fff;box-shadow:0 0 0 2px var(--text)}
+#profilename{border:none;outline:none;font-size:17px;font-weight:700;font-family:inherit;width:100%}
+#profilename:focus{border-bottom:2px solid var(--accent)}
+
+/* ---------- forward picker modal ---------- */
+#modalback{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;
+  justify-content:center;z-index:150}
+#modalback.open{display:flex}
+#fwdmodal{background:#fff;border-radius:14px;width:380px;max-width:92vw;max-height:70vh;
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-pop)}
+#fwdmodal .fhead{padding:14px 18px;border-bottom:1px solid var(--border);font-weight:700;font-size:16px}
+#fwdmodal .flist{overflow-y:auto;padding:6px 0}
+#fwdmodal .frow{display:flex;align-items:center;gap:12px;padding:9px 18px;cursor:pointer;font-size:15px}
+#fwdmodal .frow:hover{background:var(--hover)}
+#fwdmodal .frow .fname{flex:1;font-weight:600}
+
+/* toast */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#2b2f33;
+  color:#fff;padding:11px 22px;border-radius:24px;font-size:14px;opacity:0;transition:all .25s;z-index:300}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
