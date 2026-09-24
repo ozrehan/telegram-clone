@@ -1,5 +1,8 @@
 # Telegram Web Clone — now a real full-stack prototype
 
+
+**Live demo:** [https://ozrehan-telegram-clone.netlify.app](https://ozrehan-telegram-clone.netlify.app)
+
 A high-fidelity Telegram Web UI clone with a **working backend**: real accounts,
 real 1:1 DMs and groups between actual users, server-persisted history, and
 server-side bot contacts. **Netlify Functions + Netlify Blobs**, zero framework,
