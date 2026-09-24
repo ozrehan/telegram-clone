@@ -24,9 +24,8 @@ function loadData() {
   // (works in browsers because window === globalThis there).
   global.window = global;
   global.App = undefined;
-  const dataDir = path.join(__dirname, '..', '..', 'js', 'data');
-  require(path.join(dataDir, 'chats.js'));
-  require(path.join(dataDir, 'messages.js'));
+  require('./data/chats.js');
+  require('./data/messages.js');
   return global.window.App.data;
 }
 
