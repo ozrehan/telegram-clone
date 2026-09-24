@@ -32,14 +32,19 @@ const MAX_DATA_LEN = 2000000;   // ~1.5MB binary
 const MAX_TEXT = 4096;
 const ONLINE_WINDOW = 5 * 60 * 1000;
 const KINDS = ['text', 'image', 'file', 'voice', 'sticker'];
-const USER_RE = /^[a-z0-9_]{3,20}$/;
+const USER_RE = /^[a-z0-9]{3,20}$/;
 
 function rid(prefix) {
   return (prefix || 'm') + crypto.randomBytes(8).toString('hex');
 }
 
-function scryptHash(password, salt) {
-  return crypto.scryptSync(password, salt, 64, { N: 16384 }).toString('hex');
+/* SHA-256(password) with per-user salt, hex-encoded. */
+function pwHash(password, salt) {
+  return crypto.createHash('sha256').update(salt + ':' + password).digest('hex');
+}
+
+function newToken() {
+  return crypto.randomBytes(16).toString('hex'); // 32 hex chars
 }
 
 /* ------------------------------------------------------------------ */
@@ -244,8 +249,8 @@ function createApp(store, opts) {
     if (method === 'POST' && seg[0] === 'auth' && (seg[1] === 'signup' || seg[1] === 'login')) {
       const username = String(body.username || '').trim().toLowerCase();
       const password = String(body.password || '');
-      if (!USER_RE.test(username)) return err(400, 'Username must be 3-20 chars: a-z, 0-9, _');
-      if (password.length < 4) return err(400, 'Password must be at least 4 characters');
+      if (!USER_RE.test(username)) return err(400, 'Username must be 3-20 chars: a-z, 0-9');
+      if (password.length < 6) return err(400, 'Password must be at least 6 characters');
       if (seg[1] === 'signup') {
         const name = String(body.name || '').trim().slice(0, 40);
         if (!name) return err(400, 'Display name is required');
@@ -254,12 +259,12 @@ function createApp(store, opts) {
         const salt = crypto.randomBytes(16).toString('hex');
         const user = {
           username, name, bot: false, color: colorFor(username), grad: 'g2',
-          salt, hash: scryptHash(password, salt), createdAt: now(),
+          salt, hash: pwHash(password, salt), createdAt: now(),
           statusText: 'last seen recently'
         };
         await set('users/' + username, user);
         await ensureSeeded(username, name);
-        const token = crypto.randomBytes(24).toString('hex');
+        const token = newToken();
         await set('sessions/' + token, { username, exp: now() + SESSION_DAYS * 864e5 });
         await set('presence/' + username, { ts: now() });
         return ok({ token, user: { username, name, color: user.color } });
@@ -267,9 +272,9 @@ function createApp(store, opts) {
       // login
       const user = await getUser(username);
       if (!user || user.bot || !user.salt ||
-          scryptHash(password, user.salt) !== user.hash)
+          pwHash(password, user.salt) !== user.hash)
         return err(401, 'Invalid username or password');
-      const token = crypto.randomBytes(24).toString('hex');
+      const token = newToken();
       await set('sessions/' + token, { username, exp: now() + SESSION_DAYS * 864e5 });
       await set('presence/' + username, { ts: now() });
       return ok({ token, user: { username, name: user.name, color: user.color } });
@@ -507,9 +512,9 @@ function createApp(store, opts) {
       return err(404, 'Not found');
     }
 
-    /* --- POST /messages/:id/delete (own messages only) --- */
-    if (method === 'POST' && seg[0] === 'messages' && seg[2] === 'delete') {
-      const mid = seg[1];
+    /* --- POST /messages/:id/delete  and  DELETE /messages/:id
+           (own messages only; both spellings supported) --- */
+    const deleteMessage = async (mid) => {
       const chatId = await get('msgindex/' + mid);
       if (!chatId) return err(404, 'Message not found');
       const chat = await requireChat(chatId);
@@ -522,6 +527,12 @@ function createApp(store, opts) {
       await setMessages(chatId, arr);
       await del('msgindex/' + mid);
       return ok({ ok: true });
+    };
+    if (method === 'POST' && seg[0] === 'messages' && seg[2] === 'delete') {
+      return deleteMessage(seg[1]);
+    }
+    if (method === 'DELETE' && seg[0] === 'messages' && seg[1] && seg.length === 2) {
+      return deleteMessage(seg[1]);
     }
 
     return err(404, 'Not found');
@@ -530,21 +541,72 @@ function createApp(store, opts) {
   return { handle };
 }
 
-/* ---------------- Netlify Function entrypoint ---------------- */
+/* ---------------- Netlify Function entrypoint ----------------
+   Blobs are configured from the injected event.blobs context (the same
+   pattern as the WhatsApp clone). If Blobs is unavailable the function
+   falls back to an ephemeral in-memory store so it always answers
+   instead of crashing. */
 async function handler(event) {
-  try { const _b = require("@netlify/blobs"); const _c = JSON.parse(Buffer.from(event.blobs, "base64").toString()); _b.setEnvironmentContext({ siteID: event.headers["x-nf-site-id"], token: _c.token, apiURL: "https://api.netlify.com" }); } catch (e) { /* not on Netlify: local tests */ }
+  let store = null;
   try {
-    const { getStore } = require('@netlify/blobs');
-    const store = getStore('telegram');
+    const blobs = require("@netlify/blobs");
+    try {
+      const _c = JSON.parse(Buffer.from(event.blobs, "base64").toString());
+      blobs.setEnvironmentContext({
+        siteID: event.headers["x-nf-site-id"],
+        token: _c.token,
+        apiURL: "https://api.netlify.com",
+      });
+    } catch (e) { /* not on Netlify: local tests */ }
+    store = blobs.getStore("telegram");
+    // Probe the store early so a misconfigured Blobs env fails here,
+    // inside our try/catch, instead of crashing the invocation.
+    await store.get("__probe__").catch(() => null);
+  } catch (e) {
+    store = null;
+  }
+  if (!store) {
+    // Fallback: in-memory store (ephemeral). Mimics the @netlify/blobs
+    // subset the app factory uses: get(k,{type:'json'}), setJSON,
+    // set, delete, list({prefix}).
+    const mem = new Map();
+    store = {
+      get: async (k, opts) => {
+        if (!mem.has(k)) return null;
+        const v = mem.get(k);
+        if (opts && opts.type === "json") {
+          try { return JSON.parse(v); } catch (e) { return null; }
+        }
+        return v;
+      },
+      setJSON: async (k, v) => { mem.set(k, JSON.stringify(v)); },
+      set: async (k, v) => { mem.set(k, typeof v === "string" ? v : JSON.stringify(v)); },
+      delete: async (k) => { mem.delete(k); },
+      list: async (opts) => {
+        const prefix = (opts && opts.prefix) || "";
+        return { blobs: [...mem.keys()].filter((k) => k.startsWith(prefix)).map((key) => ({ key })) };
+      },
+    };
+  }
+  try {
     const app = createApp(store);
     // event.path: /.netlify/functions/api/auth/login  ->  /auth/login
-    const idx = event.path.indexOf('/api');
-    const path = idx >= 0 ? event.path.slice(idx + 4) || '/' : '/';
+    // (also handles the /api/* rewrite form: /api/auth/login)
+    let path = event.path || "/";
+    path = path.replace(/^\/\.netlify\/functions\/api/, "");
+    path = path.replace(/^\/api/, "") || "/";
+    if (!path.startsWith("/")) path = "/" + path;
     let body = {};
     if (event.body) {
       const raw = event.isBase64Encoded
         ? Buffer.from(event.body, 'base64').toString('utf8') : event.body;
-      try { body = JSON.parse(raw); } catch (e) { body = {}; }
+      try { body = JSON.parse(raw); } catch (e) {
+        return {
+          statusCode: 400,
+          headers: Object.assign({ 'Content-Type': 'application/json' }, cors()),
+          body: JSON.stringify({ error: 'invalid JSON body' })
+        };
+      }
     }
     if (event.httpMethod === 'OPTIONS')
       return { statusCode: 204, headers: cors(), body: '' };
@@ -568,7 +630,7 @@ function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
   };
 }
 
