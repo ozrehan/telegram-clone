@@ -1,0 +1,20 @@
+/* ================= variables.css — design tokens ================= */
+:root{
+  --accent:#5682a3;          /* telegram header blue-grey */
+  --accent-dark:#4a7391;
+  --green:#4dcd5e;           /* unread badge green */
+  --tick-blue:#5bb0e8;       /* read ticks */
+  --bg:#e7ebf0;              /* chat background */
+  --outgoing:#effdde;        /* outgoing bubble */
+  --text:#222;
+  --grey:#707579;
+  --grey-light:#8a9aa8;
+  --border:#e6e9ed;
+  --hover:#f4f6f8;
+  --active-chat:#e8f1f9;
+  --danger:#d45246;
+  --shadow:0 1px 2px rgba(0,0,0,.12);
+  --shadow-pop:0 4px 18px rgba(0,0,0,.18);
+  --radius:10px;
+  --font:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',sans-serif;
+}
