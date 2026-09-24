@@ -1,0 +1,124 @@
+/* ================= css/auth.css — auth screen, new-chat modal, compose FAB ================= */
+
+/* ---------- auth gate ---------- */
+#authroot {
+  position: fixed; inset: 0; z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  background: #0e1621;
+  padding: 20px;
+}
+#authroot.open { display: flex; }
+
+.authcard {
+  width: 100%; max-width: 360px;
+  background: #17212b; border-radius: 12px;
+  padding: 36px 32px 28px; text-align: center;
+  box-shadow: 0 12px 48px rgba(0,0,0,.5);
+}
+.authlogo {
+  width: 72px; height: 72px; margin: 0 auto 16px;
+  border-radius: 50%; background: #2f80ed;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.authlogo .ic.lg { width: 38px; height: 38px; }
+.authcard h1 { color: #fff; font-size: 24px; margin: 0 0 8px; font-weight: 600; }
+.authsub { color: #7f91a4; font-size: 13.5px; line-height: 1.55; margin: 0 0 18px; }
+
+.authtabs { display: flex; background: #0e1621; border-radius: 8px; padding: 4px; margin-bottom: 16px; }
+.authtabs button {
+  flex: 1; border: 0; background: transparent; color: #7f91a4;
+  padding: 8px; border-radius: 6px; font-size: 14px; cursor: pointer;
+}
+.authtabs button.on { background: #242f3d; color: #fff; font-weight: 600; }
+
+.authcard input {
+  width: 100%; box-sizing: border-box;
+  background: #0e1621; border: 1px solid #242f3d; border-radius: 8px;
+  color: #fff; font-size: 15px; padding: 11px 14px; margin-bottom: 10px; outline: none;
+}
+.authcard input:focus { border-color: #2f80ed; }
+.autherr {
+  min-height: 20px; color: #e5655f; font-size: 13px; margin: 2px 0 8px;
+  display: none;
+}
+.autherr.show { display: block; }
+.authbtn {
+  width: 100%; border: 0; border-radius: 8px; cursor: pointer;
+  background: #2f80ed; color: #fff; font-size: 15px; font-weight: 600;
+  padding: 12px; margin-top: 2px;
+}
+.authbtn:disabled { opacity: .6; cursor: default; }
+.authbtn:hover:not(:disabled) { background: #3a8df0; }
+.authhint { color: #5c6f84; font-size: 12px; margin: 14px 0 0; }
+.authhint b { color: #7f91a4; }
+
+/* ---------- compose FAB in the sidebar ---------- */
+#sidebar { position: relative; }
+#newChatBtn.fab {
+  position: absolute; right: 16px; bottom: 16px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: #2f80ed; color: #fff; border: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  z-index: 5;
+}
+#newChatBtn.fab:hover { background: #3a8df0; }
+#newChatBtn.fab .ic { width: 24px; height: 24px; }
+
+/* ---------- new chat modal ---------- */
+#newchatmodal {
+  width: min(420px, calc(100vw - 40px)); max-height: 70vh;
+  background: #17212b; border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 12px 48px rgba(0,0,0,.5);
+  animation: pop .16s ease-out;
+}
+@keyframes pop { from { transform: scale(.96); opacity: 0; } }
+#newchatmodal .fhead {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px 12px; color: #fff; font-size: 17px; font-weight: 600;
+}
+.nctoggle {
+  border: 0; background: none; color: #6ab2f2; font-size: 13.5px;
+  cursor: pointer; padding: 4px 6px;
+}
+.nctoggle:hover { text-decoration: underline; }
+#ncGroupName { padding: 0 18px 8px; }
+#ncGroupName input, .ncsearch input {
+  width: 100%; box-sizing: border-box;
+  background: #0e1621; border: 1px solid #242f3d; border-radius: 8px;
+  color: #fff; font-size: 14px; padding: 10px 12px; outline: none;
+}
+#ncGroupName input:focus, .ncsearch input:focus { border-color: #2f80ed; }
+.ncsearch { padding: 0 18px 10px; }
+#ncResults { overflow-y: auto; min-height: 120px; max-height: 44vh; padding: 0 8px 8px; }
+.ncempty { color: #5c6f84; font-size: 13.5px; text-align: center; padding: 28px 10px; }
+.nrow {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 10px; border-radius: 8px; cursor: pointer;
+}
+.nrow:hover { background: #1f2b38; }
+.nrow .ninfo { flex: 1; min-width: 0; }
+.nrow .nname { color: #fff; font-size: 14.5px; }
+.nrow .nsub { color: #7f91a4; font-size: 12.5px; }
+.botbadge {
+  background: #242f3d; color: #6ab2f2; font-size: 10.5px;
+  border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px;
+}
+.nrow .ncheck {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid #5c6f84; display: flex; align-items: center; justify-content: center;
+  color: transparent; flex: none;
+}
+.nrow.picked .ncheck { background: #2f80ed; border-color: #2f80ed; color: #fff; }
+.ncfoot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 18px 16px; border-top: 1px solid #0e1621;
+}
+.ncfoot #ncCount { color: #7f91a4; font-size: 13px; }
+.ncfoot .authbtn { width: auto; padding: 10px 22px; margin: 0; }
+
+/* logout row in settings */
+.srow.danger-row { cursor: pointer; }
+.srow.danger-row .lab { color: #e5655f; }
