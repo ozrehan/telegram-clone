@@ -9,9 +9,9 @@ App.components.chatlist = (() => {
   function snippetHtml(chat, lm) {
     if (!lm) return '<span class="snippet"></span>';
     let s = esc(lm.kind === 'text' ? lm.text : kindLabel(lm));
-    if (lm.from === 'me' && chat.type !== 'channel')
+    if (lm.from === (App.me && App.me.username) && chat.type !== 'channel')
       s = '<span class="ticks">✓✓</span> ' + s;
-    if (chat.type === 'group' && lm.from !== 'me' && lm.sender)
+    if (chat.type === 'group' && lm.from !== (App.me && App.me.username) && lm.sender)
       s = '<b>' + esc(lm.sender.split(' ')[0]) + ':</b> ' + s;
     if (chat.type === 'channel') s = 'Channel · ' + s;
     return '<span class="snippet">' + s + '</span>';
@@ -61,11 +61,12 @@ App.components.chatlist = (() => {
     $('overlay').appendChild(menu);
     menu.addEventListener('click', ev => {
       const a = ev.target.closest('button') && ev.target.closest('button').dataset.a;
-      if (a === 'pin') App.store.togglePin(chat.id);
-      if (a === 'mute') App.store.toggleMute(chat.id);
-      if (a === 'read') App.store.clearUnread(chat.id);
       App.components.chatview.closeMenu();
-      render(App.store.state.filter);
+      const done = () => render(App.store.state.filter);
+      if (a === 'pin') App.store.togglePin(chat.id).then(done);
+      else if (a === 'mute') App.store.toggleMute(chat.id).then(done);
+      else if (a === 'read') App.store.clearUnread(chat.id).then(done);
+      else done();
     });
   }
 
@@ -73,6 +74,7 @@ App.components.chatlist = (() => {
     App.store.state.filter = filter == null ? App.store.state.filter : filter;
     const q = App.store.state.filter.trim().toLowerCase();
     const list = $('chatlist');
+    if (!list) return;
     list.innerHTML = '';
     const chats = App.store.sortedChats().filter(c =>
       !q || c.name.toLowerCase().includes(q) ||
