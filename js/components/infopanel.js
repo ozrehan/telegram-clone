@@ -24,7 +24,7 @@ App.components.infopanel = (() => {
     current = chat;
     const p = ensure();
     const msgs = App.store.getMessages(chat.id);
-    const photos = msgs.filter(m => m.kind === 'image').map(m => m.src);
+    const photos = msgs.filter(m => m.kind === 'image' && (m.src || m.data)).map(m => m.src || m.data);
     // top up the grid with picsum shots so it feels lived-in
     while (photos.length < 9)
       photos.push('https://picsum.photos/seed/' + chat.id + photos.length + '/300/300');
@@ -69,9 +69,10 @@ App.components.infopanel = (() => {
 
   function action(a, chat) {
     if (a === 'mute') {
-      App.store.toggleMute(chat.id);
-      open(chat);
-      App.components.chatlist.render(App.store.state.filter);
+      App.store.toggleMute(chat.id).then(() => {
+        open(chat);
+        App.components.chatlist.render(App.store.state.filter);
+      });
     }
     if (a === 'leave' || a === 'delete') {
       App.utils.toast(a === 'leave' ? 'You left the group (demo)' : 'Chat deleted (demo)');
