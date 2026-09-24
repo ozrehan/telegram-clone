@@ -105,9 +105,12 @@ function createApp(store, opts) {
     const h = (headers && (headers.authorization || headers.Authorization)) || '';
     const m = /^Bearer (.+)$/.exec(h.trim());
     if (!m) return null;
-    const sess = await get('sessions/' + m[1]);
-    if (!sess || sess.exp < now()) return null;
-    const user = await getUser(sess.username);
+    let user = null;
+    for (let i = 0; i < 5 && !user; i++) {
+      const sess = await get('sessions/' + m[1]);
+      if (sess && sess.exp >= now()) user = await getUser(sess.username);
+      if (!user && i < 4) await new Promise(r => setTimeout(r, 350));
+    }
     if (!user) return null;
     // presence heartbeat (best effort)
     set('presence/' + user.username, { ts: now() }).catch(() => {});
@@ -529,9 +532,10 @@ function createApp(store, opts) {
 
 /* ---------------- Netlify Function entrypoint ---------------- */
 async function handler(event) {
+  try { const _b = require("@netlify/blobs"); const _c = JSON.parse(Buffer.from(event.blobs, "base64").toString()); _b.setEnvironmentContext({ siteID: event.headers["x-nf-site-id"], token: _c.token, apiURL: "https://api.netlify.com" }); } catch (e) { /* not on Netlify: local tests */ }
   try {
     const { getStore } = require('@netlify/blobs');
-    const store = getStore({ name: 'telegram', consistency: 'strong' });
+    const store = getStore('telegram');
     const app = createApp(store);
     // event.path: /.netlify/functions/api/auth/login  ->  /auth/login
     const idx = event.path.indexOf('/api');
