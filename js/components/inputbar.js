@@ -1,7 +1,9 @@
 /* ================= components/inputbar.js — message composer =================
    Send box with: emoji picker (inserts at cursor), attach menu
-   (photo -> picsum image message, file -> fake file bubble),
+   (photo/file -> real file picker, uploaded as data URL through the API),
    fake voice recorder with timer, and reply-to quoting.
+   All sends go through the backend; typing pings keep the peer's
+   "typing..." indicator alive.
 */
 'use strict';
 window.App = window.App || {};
@@ -11,6 +13,7 @@ App.components.inputbar = (() => {
   const { $, esc, icon } = App.utils;
   let currentChat = null;
   let recTimer = null, recSecs = 0;
+  let lastTypePing = 0;
 
   /* ---------------- mount ---------------- */
   function mount(container, chat) {
@@ -41,6 +44,12 @@ App.components.inputbar = (() => {
       const has = input.value.trim().length > 0;
       $('sendBtn').style.display = has ? 'flex' : 'none';
       $('bMic').style.display = has ? 'none' : 'flex';
+      // typing ping (throttled) so the peer sees "typing..."
+      const n = Date.now();
+      if (n - lastTypePing > 3000 && currentChat) {
+        lastTypePing = n;
+        App.api.typing(currentChat.id).catch(() => {});
+      }
     });
     $('sendBtn').addEventListener('click', sendText);
     $('bEmoji').addEventListener('click', e => {
@@ -75,12 +84,12 @@ App.components.inputbar = (() => {
     return h;
   }
 
-  /* ---------------- sending ---------------- */
-  function baseMsg() {
+  /* ---------------- sending (all through the API) ---------------- */
+  function basePayload(kind) {
     const r = App.store.state.replyTo;
-    const msg = { from: 'me', kind: 'text' };
-    if (r) msg.replyTo = { sender: r.sender, text: r.text };
-    return msg;
+    const p = { kind: kind || 'text', text: '' };
+    if (r && r.mid) p.replyTo = { mid: r.mid };
+    return p;
   }
 
   function sendText() {
@@ -90,46 +99,58 @@ App.components.inputbar = (() => {
     input.value = '';
     $('sendBtn').style.display = 'none';
     $('bMic').style.display = 'flex';
-    const msg = baseMsg();
-    msg.text = text;
-    deliver(msg);
+    const p = basePayload('text');
+    p.text = text;
+    deliver(p);
   }
 
   function sendSticker(emoji) {
     if (!currentChat) return;
-    const msg = baseMsg();
-    msg.kind = 'sticker';
-    msg.text = emoji;
+    const p = basePayload('sticker');
+    p.text = emoji;
     $('emojipick').classList.remove('open');
-    deliver(msg);
+    deliver(p);
   }
 
+  /** real file picker -> data URL -> API (max ~1.5MB) */
   function sendAttachment(kind) {
     if (!currentChat) return;
-    const msg = baseMsg();
-    if (kind === 'photo') {
-      const seed = 'up' + Date.now() % 100000;
-      msg.kind = 'image';
-      msg.src = 'https://picsum.photos/seed/' + seed + '/600/400';
-      msg.text = '';
-    } else {
-      msg.kind = 'file';
-      msg.fileName = 'document-' + (App.store.getMessages(currentChat.id).length + 1) + '.pdf';
-      msg.fileSize = 200000 + Math.floor(Math.random() * 3000000);
-      msg.text = '';
-    }
-    deliver(msg);
-    App.utils.toast(kind === 'photo' ? 'Photo sent' : 'File sent');
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    if (kind === 'photo') inp.accept = 'image/*';
+    inp.onchange = () => {
+      const f = inp.files && inp.files[0];
+      if (!f) return;
+      if (f.size > 1572864) {
+        App.utils.toast('File too large (max 1.5MB)');
+        return;
+      }
+      const rd = new FileReader();
+      rd.onload = () => {
+        const p = basePayload(kind === 'photo' ? 'image' : 'file');
+        p.data = rd.result;
+        if (kind !== 'photo') { p.fileName = f.name; p.fileSize = f.size; }
+        deliver(p);
+        App.utils.toast(kind === 'photo' ? 'Photo sent' : 'File sent');
+      };
+      rd.onerror = () => App.utils.toast('Could not read file');
+      rd.readAsDataURL(f);
+    };
+    inp.click();
   }
 
-  function deliver(msg) {
+  async function deliver(payload) {
     const chat = currentChat;
-    App.store.addMessage(chat.id, msg);
+    if (!chat) return;
     App.store.setReplyTo(null);
     hideReplyBar();
-    App.components.chatview.appendMessage(chat, msg);
-    App.components.chatlist.render(App.store.state.filter);
-    App.bot.react(chat, msg);
+    try {
+      const saved = await App.store.sendMessage(chat.id, payload);
+      App.components.chatview.appendMessage(chat, saved);
+      App.components.chatlist.render(App.store.state.filter);
+    } catch (e) {
+      App.utils.toast('Send failed: ' + e.message);
+    }
   }
 
   /* ---------------- emoji picker ---------------- */
@@ -192,11 +213,9 @@ App.components.inputbar = (() => {
     } else {
       clearInterval(recTimer);
       if (recSecs > 0 && currentChat) {
-        const msg = baseMsg();
-        msg.kind = 'voice';
-        msg.duration = recSecs;
-        msg.text = '';
-        deliver(msg);
+        const p = basePayload('voice');
+        p.duration = recSecs;
+        deliver(p);
       }
     }
   }
