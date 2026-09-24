@@ -1,0 +1,11 @@
+# Netlify config for the Telegram clone (full-stack prototype).
+# The API lives in netlify/functions/api.js; /api/* rewrites to it so the
+# frontend can call fetch('/api/...') with no CORS hassle.
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
