@@ -1,0 +1,77 @@
+/* ================= chat.css — conversation view ================= */
+#cheader{background:#fff;display:flex;align-items:center;gap:12px;padding:8px 16px;
+  border-bottom:1px solid var(--border);flex-shrink:0}
+#cheader .avatar{cursor:pointer}
+#ctitle{flex:1;min-width:0;cursor:pointer}
+#ctitle .name{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctitle .status{font-size:13px;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctitle .status.typing{font-style:italic}
+#cheader .iconbtn{color:var(--grey)}
+
+/* in-chat search bar (toggled from header) */
+#chatsearch{display:none;align-items:center;gap:8px;background:#fff;padding:8px 16px;
+  border-bottom:1px solid var(--border)}
+#chatsearch.open{display:flex}
+#chatsearch input{flex:1;border:none;background:#f1f4f6;border-radius:18px;padding:9px 16px;
+  font-size:14px;outline:none;font-family:inherit}
+#chatsearch .count{font-size:12px;color:var(--grey);white-space:nowrap}
+
+#messages{flex:1;overflow-y:auto;padding:16px 8%;position:relative;background-color:var(--bg);
+  background-image:radial-gradient(#d5dbe2 1px,transparent 1px);background-size:22px 22px}
+#msgsInner{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:6px}
+.datebubble{align-self:center;background:#c9d4dc;color:#5a6a78;font-size:12.5px;font-weight:600;
+  padding:5px 14px;border-radius:14px;margin:8px 0}
+
+/* ---------- message bubbles ---------- */
+.msg{max-width:65%;padding:8px 12px 6px;border-radius:var(--radius);font-size:14.5px;line-height:1.45;
+  position:relative;box-shadow:var(--shadow);word-wrap:break-word;overflow-wrap:anywhere}
+.msg.in{background:#fff;align-self:flex-start;border-top-left-radius:3px}
+.msg.out{background:var(--outgoing);align-self:flex-end;border-top-right-radius:3px}
+.msg .sender{font-weight:700;font-size:13.5px;margin-bottom:2px;cursor:pointer}
+.msg .fwd{font-size:12.5px;color:var(--grey);font-style:italic;margin-bottom:4px}
+.msg .body{display:inline;white-space:pre-wrap}
+.msg .meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11.5px;
+  color:var(--grey-light);margin-top:4px;float:right;margin-left:10px;user-select:none}
+.msg .clear{clear:both}
+.msg.hl{outline:2px solid var(--accent);outline-offset:2px}
+
+/* quoted reply inside a bubble */
+.msg .quote{border-left:3px solid var(--accent);background:rgba(86,130,163,.08);border-radius:4px;
+  padding:6px 10px;margin-bottom:6px;font-size:13px;cursor:pointer}
+.msg .quote .qsender{font-weight:700;color:var(--accent);font-size:12.5px}
+.msg .quote .qtext{color:var(--grey);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ticks */
+.ticks{font-size:13px;letter-spacing:-2px}
+.ticks.sent{color:var(--grey-light)}
+.ticks.read{color:var(--tick-blue)}
+
+/* image message */
+.msg .pic{display:block;max-width:320px;width:100%;border-radius:6px;margin:-2px -2px 4px;cursor:pointer}
+/* file message */
+.msg .file{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.04);
+  border-radius:8px;padding:10px 12px;margin-bottom:4px;min-width:220px}
+.msg .file .fic{width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.msg .file .fname{font-weight:600;font-size:13.5px;word-break:break-all}
+.msg .file .fsize{font-size:12px;color:var(--grey-light)}
+/* voice message */
+.msg .voice{display:flex;align-items:center;gap:10px;min-width:230px;padding:4px 0}
+.msg .voice .vplay{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.msg .voice .vwave{display:flex;align-items:center;gap:2px;height:28px;flex:1}
+.msg .voice .vwave i{width:3px;background:var(--accent);border-radius:2px;opacity:.85}
+.msg .voice .vdur{font-size:12px;color:var(--grey-light)}
+/* sticker (big emoji) */
+.msg.stickerbox{background:none;box-shadow:none;padding:0}
+.msg .sticker{font-size:64px;line-height:1}
+
+/* ---------- right-click context menu ---------- */
+.ctxmenu{position:fixed;background:#fff;border-radius:10px;box-shadow:var(--shadow-pop);
+  padding:6px 0;min-width:190px;z-index:200}
+.ctxmenu button{display:flex;align-items:center;gap:12px;width:100%;border:none;background:none;
+  padding:10px 16px;font-size:14px;cursor:pointer;color:var(--text);text-align:left}
+.ctxmenu button:hover{background:var(--hover)}
+.ctxmenu button.danger{color:var(--danger)}
+.ctxmenu button .ic{width:18px;height:18px;color:var(--grey)}
+.ctxmenu hr{border:none;border-top:1px solid var(--border);margin:4px 0}
