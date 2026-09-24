@@ -41,7 +41,7 @@ App.components.bubbles = (() => {
   function bodyHtml(m) {
     switch (m.kind) {
       case 'image':
-        return '<img class="pic" src="' + esc(m.src) + '" alt="photo" loading="lazy">' +
+        return '<img class="pic" src="' + esc(m.src || m.data) + '" alt="photo" loading="lazy">' +
           (m.text ? '<span class="body">' + esc(m.text) + '</span>' : '');
       case 'file':
         return '<div class="file"><div class="fic">' + icon('file') + '</div>' +
@@ -62,7 +62,7 @@ App.components.bubbles = (() => {
   /** main entry: build the bubble element for (chat, message) */
   function render(chat, m) {
     const d = document.createElement('div');
-    const out = m.from === 'me';
+    const out = m.from === (App.me && App.me.username);
     d.className = 'msg ' + (out ? 'out' : 'in') + (m.kind === 'sticker' ? ' stickerbox' : '');
     d.dataset.mid = m.mid;
 
