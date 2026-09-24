@@ -13,6 +13,7 @@ App.components.settings = (() => {
 
   function open() {
     App.store.setActive(null);
+    if (App.components.chatview.stopPoll) App.components.chatview.stopPoll();
     App.components.chatlist.render(App.store.state.filter);
     App.components.infopanel.close();
     const s = App.store.state.settings;
@@ -42,11 +43,18 @@ App.components.settings = (() => {
             '" style="background:' + c + '" title="' + c + '"></div>').join('') +
           '</div></div></div>' +
         '<div class="scard"><div class="srow"><div class="lab">About this clone' +
-          '<div class="desc">Telegram Web UI clone · vanilla JS · no build step · works from file://</div></div>' +
+          '<div class="desc">Telegram Web UI clone · vanilla JS · real backend (Netlify Functions + Blobs)</div></div>' +
           icon('logo') + '</div></div>' +
+        '<div class="scard"><div class="srow danger-row" id="logoutRow"><div class="lab">Log out' +
+          '<div class="desc">Sign out of this account on this device</div></div>' +
+          icon('back') + '</div></div>' +
       '</div></div>';
 
     $('setBack').addEventListener('click', close);
+    $('logoutRow').addEventListener('click', () => {
+      App.api.setToken(null);
+      location.reload();
+    });
     $('nameEdit').addEventListener('click', () => $('profilename').focus());
     $('profilename').addEventListener('change', e => {
       const name = e.target.value.trim() || 'Rehan';
