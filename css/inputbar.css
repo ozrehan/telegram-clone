@@ -1,0 +1,48 @@
+/* ================= inputbar.css — composer ================= */
+#inputbar{background:#fff;padding:10px 16px;display:flex;align-items:center;gap:6px;
+  border-top:1px solid var(--border);position:relative;flex-shrink:0}
+#inputbar .iconbtn{color:var(--grey-light)}
+#msgInput{flex:1;border:none;outline:none;font-size:15px;padding:12px 16px;background:#f1f4f6;
+  border-radius:22px;font-family:inherit;min-width:0}
+#sendBtn{background:var(--accent);transition:background .15s}
+#sendBtn:hover{background:var(--accent-dark)}
+#sendBtn .ic{color:#fff}
+
+/* reply-to preview strip above the input */
+#replybar{display:none;align-items:center;gap:10px;background:#fff;padding:8px 16px;
+  border-top:1px solid var(--border);border-left:3px solid var(--accent)}
+#replybar.open{display:flex}
+#replybar .rsender{font-weight:700;color:var(--accent);font-size:13px}
+#replybar .rtext{font-size:13px;color:var(--grey);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#replybar .iconbtn{width:32px;height:32px}
+
+/* emoji picker popover */
+#emojipick{position:absolute;bottom:64px;left:12px;width:340px;max-height:300px;background:#fff;
+  border-radius:12px;box-shadow:var(--shadow-pop);display:none;flex-direction:column;overflow:hidden;z-index:50}
+#emojipick.open{display:flex}
+#emojipick .etabs{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--border)}
+#emojipick .etabs button{border:none;background:none;font-size:20px;cursor:pointer;padding:6px 10px;border-radius:8px}
+#emojipick .etabs button.on{background:var(--hover)}
+#emojipick .egrid{padding:10px;overflow-y:auto;display:grid;grid-template-columns:repeat(8,1fr);gap:2px}
+#emojipick .egrid button{border:none;background:none;font-size:24px;cursor:pointer;padding:6px;border-radius:8px;line-height:1}
+#emojipick .egrid button:hover{background:var(--hover);transform:scale(1.2)}
+
+/* attach menu popover */
+#attachmenu{position:absolute;bottom:64px;left:52px;background:#fff;border-radius:12px;
+  box-shadow:var(--shadow-pop);padding:6px 0;min-width:200px;display:none;z-index:50}
+#attachmenu.open{display:block}
+#attachmenu button{display:flex;align-items:center;gap:12px;width:100%;border:none;background:none;
+  padding:11px 18px;font-size:14px;cursor:pointer;color:var(--text)}
+#attachmenu button:hover{background:var(--hover)}
+#attachmenu .ic{color:var(--accent)}
+
+/* fake voice recorder UI */
+#recorder{display:none;align-items:center;gap:12px;flex:1;padding:8px 4px}
+#recorder.open{display:flex}
+#recorder .rdot{width:12px;height:12px;border-radius:50%;background:#e33;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+#recorder .rtime{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+#recorder .rwaves{flex:1;display:flex;align-items:center;gap:2px;height:26px;overflow:hidden}
+#recorder .rwaves i{width:3px;background:var(--grey-light);border-radius:2px;animation:wv .5s infinite alternate}
+@keyframes wv{from{height:6px}to{height:22px}}
+#recorder .rhint{font-size:12px;color:var(--grey)}
